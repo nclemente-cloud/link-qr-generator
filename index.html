@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Generador de enlaces para WhatsApp</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#e9f5ef; --card:#ffffff; --ink:#0f2a22; --muted:#587068;
+  --line:#cfe3d9; --accent:#0e8a63; --accent-ink:#ffffff; --accent-soft:#d6f0e4;
+  --warn:#b4432f; --field:#f6fbf8;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0b1a15; --card:#12261f; --ink:#e6f4ed; --muted:#8fb0a3;
+    --line:#244237; --accent:#33c48d; --accent-ink:#06261b; --accent-soft:#1a3a2e;
+    --warn:#ff9a85; --field:#0e201a;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0b1a15; --card:#12261f; --ink:#e6f4ed; --muted:#8fb0a3;
+  --line:#244237; --accent:#33c48d; --accent-ink:#06261b; --accent-soft:#1a3a2e;
+  --warn:#ff9a85; --field:#0e201a;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; background:var(--bg); color:var(--ink);
+  font-family:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.5;
+  display:flex; justify-content:center; padding:32px 16px;
+}
+main{width:100%; max-width:520px}
+h1{
+  font-family:"Bricolage Grotesque","DM Sans",system-ui,sans-serif;
+  font-size:clamp(1.8rem,6vw,2.4rem); line-height:1.1; margin:0 0 8px; letter-spacing:-0.02em;
+}
+.lead{margin:0 0 24px; color:var(--muted)}
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:20px;
+  padding:24px; box-shadow:0 10px 30px rgba(14,138,99,.10);
+}
+label,.label{display:block; font-weight:500; margin:0 0 6px}
+.field{margin-bottom:18px}
+input,textarea,select{
+  width:100%; font:inherit; color:var(--ink); background:var(--field);
+  border:1.5px solid var(--line); border-radius:12px; padding:12px 14px;
+  transition:border-color .15s, box-shadow .15s;
+}
+select{margin-bottom:10px; cursor:pointer}
+textarea{min-height:110px; resize:vertical}
+input:focus,textarea:focus,select:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-soft)}
+.phone-row{display:flex; gap:10px}
+.prefix{
+  flex:0 0 auto; display:flex; align-items:center; gap:6px; padding:0 14px;
+  background:var(--accent-soft); border-radius:12px; font-weight:500; white-space:nowrap;
+}
+.hint{font-size:.85rem; color:var(--muted); margin-top:6px}
+.error{font-size:.9rem; color:var(--warn); margin:-6px 0 14px; min-height:1.3em}
+button{
+  font:inherit; font-weight:500; border:0; border-radius:12px; padding:13px 18px;
+  cursor:pointer; transition:transform .1s, opacity .15s, background .15s;
+}
+button:active{transform:scale(.98)}
+button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.primary{width:100%; background:var(--accent); color:var(--accent-ink)}
+.primary:hover{opacity:.92}
+.result{margin-top:22px; padding-top:22px; border-top:1px dashed var(--line)}
+.result[hidden]{display:none}
+.result{scroll-margin-top:16px}
+.link-box{
+  background:var(--accent-soft); border-radius:12px; padding:12px 14px;
+  word-break:break-all; font-size:.95rem; margin-bottom:12px;
+}
+.actions{display:flex; gap:10px; flex-wrap:wrap}
+.actions>*{flex:1 1 140px}
+.secondary{background:var(--accent-soft); color:var(--ink); text-align:center}
+.secondary:hover{opacity:.85}
+a.secondary{display:block; text-decoration:none; padding:13px 18px; border-radius:12px; font-weight:500}
+.qr-block{margin-top:22px; text-align:center}
+.qr-block[hidden]{display:none}
+.qr-tile{
+  display:inline-block; background:#ffffff; padding:12px; border-radius:16px;
+  border:1px solid var(--line);
+}
+.qr-tile img{display:block; width:220px; max-width:100%; height:auto; image-rendering:pixelated}
+.qr-note{font-size:.9rem; color:var(--warn); margin:0}
+.qr-block .secondary{margin-top:14px; width:100%}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Generador de enlaces para WhatsApp</h1>
+  <p class="lead">Creá un enlace y un código QR que abren un chat con el mensaje ya escrito.</p>
+
+  <div class="card">
+    <div class="field">
+      <label for="country">País</label>
+      <select id="country" aria-label="País y prefijo"></select>
+
+      <label for="phone">Número de teléfono</label>
+      <div class="phone-row">
+        <div class="prefix" id="prefix" aria-hidden="true"></div>
+        <input id="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="11 1234 5678">
+      </div>
+      <div class="hint" id="phone-hint">Escribí el número sin el código de país. Los espacios y guiones se ignoran.</div>
+    </div>
+
+    <div class="field">
+      <label for="msg">Mensaje predeterminado</label>
+      <textarea id="msg" placeholder="Hola, vi tu publicación y me gustaría más información."></textarea>
+    </div>
+
+    <div class="error" id="error" role="alert"></div>
+    <button class="primary" id="generate" type="button">Generar enlace y QR</button>
+
+    <div class="result" id="result" hidden>
+      <span class="label" id="link-label">Tu enlace</span>
+      <div class="link-box" id="link-out" aria-labelledby="link-label"></div>
+      <div class="actions">
+        <button class="secondary" id="copy" type="button">Copiar enlace</button>
+        <a class="secondary" id="open" href="#" target="_blank" rel="noopener">Probar enlace</a>
+      </div>
+
+      <div class="qr-block" id="qr-block">
+        <div class="qr-tile" id="qr-tile"><img id="qr-img" alt="Código QR del enlace de WhatsApp"></div>
+        <p class="qr-note" id="qr-note" hidden>El mensaje es demasiado largo para un código QR. Acortalo para generarlo.</p>
+        <button class="secondary" id="download" type="button">Descargar QR (PNG)</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+(function(){
+  // ISO | nombre | prefijo
+  var RAW = "AR|Argentina|54;BO|Bolivia|591;BR|Brasil|55;CL|Chile|56;CO|Colombia|57;CR|Costa Rica|506;CU|Cuba|53;EC|Ecuador|593;SV|El Salvador|503;GT|Guatemala|502;HN|Honduras|504;MX|México|52;NI|Nicaragua|505;PA|Panamá|507;PY|Paraguay|595;PE|Perú|51;DO|República Dominicana|1;UY|Uruguay|598;VE|Venezuela|58;US|Estados Unidos|1;CA|Canadá|1;PR|Puerto Rico|1;ES|España|34;PT|Portugal|351;FR|Francia|33;DE|Alemania|49;IT|Italia|39;GB|Reino Unido|44;IE|Irlanda|353;NL|Países Bajos|31;BE|Bélgica|32;CH|Suiza|41;AT|Austria|43;SE|Suecia|46;NO|Noruega|47;DK|Dinamarca|45;FI|Finlandia|358;IS|Islandia|354;LU|Luxemburgo|352;PL|Polonia|48;CZ|Chequia|420;SK|Eslovaquia|421;HU|Hungría|36;RO|Rumania|40;BG|Bulgaria|359;GR|Grecia|30;HR|Croacia|385;RS|Serbia|381;LT|Lituania|370;LV|Letonia|371;EE|Estonia|372;UA|Ucrania|380;RU|Rusia|7;TR|Turquía|90;IL|Israel|972;AE|Emiratos Árabes Unidos|971;SA|Arabia Saudita|966;QA|Catar|974;KW|Kuwait|965;JO|Jordania|962;LB|Líbano|961;IQ|Irak|964;IR|Irán|98;EG|Egipto|20;MA|Marruecos|212;DZ|Argelia|213;NG|Nigeria|234;GH|Ghana|233;KE|Kenia|254;ZA|Sudáfrica|27;IN|India|91;PK|Pakistán|92;BD|Bangladés|880;CN|China|86;HK|Hong Kong|852;TW|Taiwán|886;JP|Japón|81;KR|Corea del Sur|82;VN|Vietnam|84;TH|Tailandia|66;MY|Malasia|60;SG|Singapur|65;ID|Indonesia|62;PH|Filipinas|63;AU|Australia|61;NZ|Nueva Zelanda|64";
+  var countries = RAW.split(";").map(function(r){
+    var p=r.split("|"); return {iso:p[0], name:p[1], dial:p[2]};
+  }).sort(function(a,b){return a.name.localeCompare(b.name,"es")});
+
+  function flag(iso){
+    return String.fromCodePoint.apply(null, iso.split("").map(function(c){return 127397+c.charCodeAt(0)}));
+  }
+
+  var sel=document.getElementById('country'), prefix=document.getElementById('prefix');
+  var phone=document.getElementById('phone'), msg=document.getElementById('msg');
+  var error=document.getElementById('error'), result=document.getElementById('result');
+  var out=document.getElementById('link-out'), copyBtn=document.getElementById('copy');
+  var openLink=document.getElementById('open'), hint=document.getElementById('phone-hint');
+  var qrImg=document.getElementById('qr-img'), qrTile=document.getElementById('qr-tile');
+  var qrNote=document.getElementById('qr-note'), dlBtn=document.getElementById('download');
+  var current='', copyTimer, dlTimer;
+
+  countries.forEach(function(c){
+    var o=document.createElement('option');
+    o.value=c.iso; o.textContent=flag(c.iso)+"  "+c.name+" (+"+c.dial+")";
+    sel.appendChild(o);
+  });
+
+  function currentCountry(){
+    return countries.filter(function(c){return c.iso===sel.value})[0];
+  }
+
+  function updatePrefix(){
+    var c=currentCountry();
+    prefix.textContent=flag(c.iso)+" +"+c.dial;
+    hint.textContent = c.iso==="AR"
+      ? "Para celulares de Argentina, agregá un 9 antes del código de área (por ejemplo 9 11 1234 5678)."
+      : "Escribí el número sin el código de país. Los espacios y guiones se ignoran.";
+  }
+
+  // País inicial: siempre Argentina
+  sel.value="AR";
+  updatePrefix();
+  sel.addEventListener('change',updatePrefix);
+
+  function matchByPrefix(digits){
+    var best=null;
+    countries.forEach(function(c){
+      if(digits.indexOf(c.dial)===0 && (!best||c.dial.length>best.dial.length)) best=c;
+    });
+    return best;
+  }
+
+  function renderQR(link){
+    qrNote.hidden=true; qrTile.hidden=false; dlBtn.hidden=false;
+    try{
+      var qr=qrcode(0,'M'); qr.addData(link); qr.make();
+      var n=qr.getModuleCount(), quiet=4, cell=Math.max(4,Math.floor(512/(n+quiet*2)));
+      var size=cell*(n+quiet*2);
+      var cv=document.createElement('canvas'); cv.width=cv.height=size;
+      var ctx=cv.getContext('2d');
+      ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,size,size);
+      ctx.fillStyle='#0a2f24';
+      for(var r=0;r<n;r++){for(var c=0;c<n;c++){
+        if(qr.isDark(r,c)) ctx.fillRect((c+quiet)*cell,(r+quiet)*cell,cell,cell);
+      }}
+      qrImg.src=cv.toDataURL('image/png');
+    }catch(e){
+      qrImg.removeAttribute('src');
+      qrTile.hidden=true; dlBtn.hidden=true; qrNote.hidden=false;
+    }
+  }
+
+  function generate(){
+    var raw=phone.value.trim(), full, c;
+    if(raw.charAt(0)==='+'){
+      full=raw.replace(/\D/g,'');
+      c=matchByPrefix(full);
+      if(c){ sel.value=c.iso; updatePrefix(); }
+    }else{
+      c=currentCountry();
+      full=c.dial+raw.replace(/\D/g,'').replace(/^0+/,'');
+    }
+    if(full.length<8||full.length>15){
+      error.textContent='Ingresá un número válido (entre 8 y 15 dígitos contando el código de país).';
+      result.hidden=true; current=''; return;
+    }
+    error.textContent='';
+    var text=msg.value.trim();
+    current='https://wa.me/'+full+(text?'?text='+encodeURIComponent(text):'');
+    out.textContent=current;
+    openLink.href=current;
+    result.hidden=false;
+    copyBtn.textContent='Copiar enlace';
+    dlBtn.textContent='Descargar QR (PNG)';
+    renderQR(current);
+    var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    requestAnimationFrame(function(){
+      result.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+    });
+  }
+
+  function flash(btn,label,original,which){
+    btn.textContent=label;
+    clearTimeout(which==='copy'?copyTimer:dlTimer);
+    var t=setTimeout(function(){btn.textContent=original},2000);
+    if(which==='copy') copyTimer=t; else dlTimer=t;
+  }
+
+  function fallbackCopy(){
+    var t=document.createElement('textarea');
+    t.value=current; t.style.position='fixed'; t.style.opacity='0';
+    document.body.appendChild(t); t.select();
+    var ok=false;
+    try{ok=document.execCommand('copy')}catch(e){}
+    document.body.removeChild(t);
+    flash(copyBtn,ok?'¡Copiado!':'No se pudo copiar','Copiar enlace','copy');
+  }
+
+  function copy(){
+    if(!current) return;
+    if(navigator.clipboard&&window.isSecureContext){
+      navigator.clipboard.writeText(current).then(function(){flash(copyBtn,'¡Copiado!','Copiar enlace','copy')},fallbackCopy);
+    }else{
+      fallbackCopy();
+    }
+  }
+
+  function anchorDownload(url){
+    var a=document.createElement('a');
+    a.href=url; a.download='qr-whatsapp.png';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+
+  function download(){
+    var src=qrImg.getAttribute('src');
+    if(!src) return;
+    var label='Descargar QR (PNG)';
+    fetch(src).then(function(r){return r.blob()}).then(function(blob){
+      var viewer=(window.claude&&window.claude.use)?window.claude.use('downloads'):Promise.resolve(null);
+      return viewer.then(function(downloads){
+        if(downloads){
+          return downloads.save({filename:'qr-whatsapp.png',data:blob}).then(function(){
+            flash(dlBtn,'¡Descargado!',label,'dl');
+          });
+        }
+        anchorDownload(src);
+        flash(dlBtn,'¡Descargado!',label,'dl');
+      });
+    }).catch(function(err){
+      if(err&&err.code==='declined') return;
+      flash(dlBtn,'No se pudo descargar',label,'dl');
+    });
+  }
+
+  document.getElementById('generate').addEventListener('click',generate);
+  copyBtn.addEventListener('click',copy);
+  dlBtn.addEventListener('click',download);
+  phone.addEventListener('keydown',function(e){if(e.key==='Enter')generate()});
+})();
+</script>
+</body>
+</html>
